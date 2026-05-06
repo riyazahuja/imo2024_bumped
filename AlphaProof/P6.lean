@@ -183,28 +183,37 @@ theorem imo_2024_p6
     cases b 0 0with|_=>exact absurd (b 0$ (0+(1 *(@(u ↑.((0) )))))^ 01: ↑ ((_)) ) (id$ (by(cases ( b (u 0) ( (u 0)))with|_ => continuity)))
   rintro K V
   -- Now let f(x) = -x + 2⌈x⌉. We claim that f is aquaesulian.
-  let f : ℚ → ℚ := λ N=>-N+2 *Int.ceil N
-  have hf : IsAquaesulian f := by
-    rw [IsAquaesulian_def]
-    sorry
-  have hV := V f hf
-  let S : Set ℚ := {x | ∃ r, f r + f (-r) = x}
-  have hsubset : ({(0 : ℚ), 2} : Set ℚ) ⊆ S := by
-    intro x hx
-    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
-    rcases hx with rfl | rfl
-    · exact ⟨-1, by norm_num [S, f]⟩
-    · exact ⟨(1 / 2 : ℚ), by norm_num [S, f]⟩
-  have hcard : ({(0 : ℚ), 2} : Set ℚ).ncard ≤ S.ncard :=
-    Set.ncard_le_ncard hsubset (by simpa [S] using hV.1)
-  have hpair : ({(0 : ℚ), 2} : Set ℚ).ncard = 2 := by
-    exact Set.ncard_pair (show (0 : ℚ) ≠ 2 by norm_num)
-  have hs_eq : S = {x | ∃ r, f r + f (-r) = x} := rfl
-  have hS_le : (S.ncard : ℤ) ≤ K := by
-    simpa [S, hs_eq] using hV.2
-  exact (by
-    have : (2 : ℤ) ≤ S.ncard := by
-      exact_mod_cast hpair ▸ hcard
-    exact this.trans hS_le)
+  specialize V $ λ N=>-N+2 *Int.ceil N
+  specialize( V $ (IsAquaesulian_def _).mpr _)
+  · simp_rw [ ←eq_sub_iff_add_eq']
+    /- The functional equation simplifies to
+        ⌈x - y + ⌈y⌉ * 2⌉ * 2 = ⌈y⌉ * 2 + ⌈x⌉ * 2 or
+        ⌈-x + y + ⌈x⌉ * 2⌉ * 2 = ⌈y⌉ * 2 + ⌈x⌉ * 2. -/
+    ring_nf
+    use mod_cast@?_
+    /- Which is equivalent to:
+        (A) ⌈y⌉ + ⌈x⌉ - 1 < x - y + ⌈y⌉ * 2 ≤ ⌈y⌉ + ⌈x⌉ or
+        (B) ⌈y⌉ + ⌈x⌉ - 1 < -x + y + ⌈x⌉ * 2 ≤ ⌈y⌉ + ⌈x⌉ -/
+    norm_num[<-add_mul,Int.ceil_eq_iff]
+    useλc K=>(em _).imp (⟨by linarith[Int.ceil_lt_add_one c,Int.le_ceil K],.⟩) (by repeat use by linarith[.,Int.le_ceil c,or,Int.ceil_lt_add_one$ K])
+    /- If x - y + ⌈y⌉ * 2 ≤ ⌈y⌉ + ⌈x⌉ then we have the desired result (A)
+        since ⌈y⌉ < y + 1.
+        Otherwise, we have ⌈y⌉ + ⌈x⌉ < x - y + ⌈y⌉ * 2 which we negate and
+        add ⌈x⌉ * 2 + ⌈y⌉ * 2 to get -x + y + ⌈x⌉ * 2 < ⌈y⌉ + ⌈x⌉,
+        from which we get the desired result (B) since ⌈x⌉ < x + 1. -/
+  simp_all[Int.ceil_neg, ←add_assoc]
+  suffices:2<=V.1.toFinset.card
+  · let M:=V.1.toFinset
+    have h2nat : 2 ≤ ({x | ∃ r : ℚ, 2 * ↑⌈r⌉ + -(2 * ↑⌊r⌋) = x} : Set ℚ).ncard := by
+      rwa [Set.ncard_eq_toFinset_card _ V.1]
+    have h2int : (2 : ℤ) ≤ ({x | ∃ r : ℚ, 2 * ↑⌈r⌉ + -(2 * ↑⌊r⌋) = x} : Set ℚ).ncard := by
+      exact_mod_cast h2nat
+    exact h2int.trans V.2
+  /- Finally, we have f(-1) + f(1) = 0 and f(1/2) = f(-1/2) = 2
+      as two distinct values of f. Thus, c = 2 is tight as desired. -/
+  use Finset.one_lt_card.2$ by
+    refine ⟨0, V.1.mem_toFinset.2 ?_, 2, V.1.mem_toFinset.2 ?_, by norm_num⟩
+    · exact ⟨-1, by norm_num⟩
+    · exact ⟨(1 / 2 : ℚ), by norm_num⟩
 
 #print axioms imo_2024_p6
